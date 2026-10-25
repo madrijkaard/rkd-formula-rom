@@ -9,6 +9,9 @@ export class Car {
     this.x = 0;          // lateral position (m), 0 = centre, + = right
     this.v = 0;          // speed (m/s)
     this.steer = 0;      // smoothed steering (-1..1), drives the lateral movement
+    this.headingError = 0; // camera follows the road tangent automatically
+    this.contactSide = 0;  // -1 left, +1 right, 0 clear
+    this.shake = 0;
     this.throttle = 0;   // smoothed pedal values for the dash display
     this.brake = 0;
     this.gear = 0;       // 0 = neutral
@@ -41,13 +44,27 @@ export class Car {
     // Arcade hill resistance; keep the parked car still until the driver moves.
     if (road && (v > 0 || input.throttle > 0)) a -= 9.81 * road.grade;
     this.v = clamp(v + a * dt, 0, CAR.vmax);
-    this.z += this.v * dt;
 
-    // Lateral movement: needs speed to turn, clamped to the track limits.
-    const grip = clamp(this.v / 25, 0, 1);
-    this.x += this.steer * CAR.lateral * grip * dt;
+    // Follow bends automatically; steering only chooses the lateral position.
+    // No outward curve force: without input the car stays in its chosen lane.
+    this.headingError = 0;
+    const across = this.steer * CAR.lateral * clamp(this.v / 25, 0, 1) * dt;
+    const nextX = this.x + across;
     const lim = TRACK.roadHalf - CAR.halfWidth;
-    this.x = clamp(this.x, -lim, lim);
+    const side = nextX >= lim ? 1 : nextX <= -lim ? -1 : 0;
+    const pushing = side && (side * across > 0 || side * input.steer > 0);
+    if (pushing) {
+      // The same gradual friction applies on straights and bends. It wins over
+      // the accelerator, and only persistent contact brings the car to rest.
+      this.v = Math.max(0, Math.min(v, this.v) - CAR.wallDrag * dt);
+      this.contactSide = side;
+    } else {
+      this.contactSide = 0;
+    }
+    this.x = clamp(nextX, -lim, lim);
+    // Use the collision-adjusted speed so a stopped car cannot creep along a wall.
+    this.z += this.v * dt;
+    this.shake = pushing && (v > 0 || input.throttle > 0) ? 0.35 : 0;
 
     // Automatic gearbox (display only).
     const kmh = this.kmh;

@@ -103,6 +103,13 @@ export class Renderer {
       if (hash(f, 1) < amp) sy = hash(f, 2) < 0.5 ? -k : k;
       if (hash(f, 3) < amp * 0.3) sx = hash(f, 4) < 0.5 ? -k : k;
     }
+    const collisionShake = (car.shake || 0) * 7 * cw / COCKPIT.w;
+    if (collisionShake > 0) {
+      const f = Math.floor(t * 45);
+      sx += Math.round((hash(f, 8) * 2 - 1) * collisionShake);
+      sy += Math.round((hash(f, 9) * 2 - 1) * collisionShake);
+    }
+
     this.world.render(this.fb, car, t, 0);
     this.lowCtx.putImageData(this.image, 0, 0);
     ctx.imageSmoothingEnabled = false;
@@ -110,7 +117,8 @@ export class Renderer {
 
     if (this.cockpit) {
       // overscan by k pixels on each side so the shake never reveals the edges
-      const ox = -k + sx, oy = -k + sy, ow = cw + 2 * k, oh = ch + 2 * k;
+      const pad = k + Math.ceil(7 * cw / COCKPIT.w);
+      const ox = -pad + sx, oy = -pad + sy, ow = cw + 2 * pad, oh = ch + 2 * pad;
       if (this.tires) this.tires.drawCockpit(ctx, this.cockpit, car, ox, oy, ow, oh);
       else ctx.drawImage(this.cockpit, ox, oy, ow, oh);
 
