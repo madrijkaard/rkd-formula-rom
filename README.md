@@ -15,7 +15,7 @@
 
 **rkd-formula-rom** is a Formula 1 game developed to run in a browser, with a retro 16-bit look inspired by Mega Drive / SNES racing games and a first-person cockpit view.
 
-The current version is a **cockpit prototype**: a straight, infinite, looping track with grandstands on both sides and no opponents. A pseudo-3D (OutRun-style) world is rendered at a low internal resolution and scaled up with nearest-neighbour filtering. A pixel-art cockpit sits on top of it, and the steering wheel with the driver's hands rotates slightly as you steer. A HUD shows the lap, distance, position, speed and a minimap.
+The current version is a **Suzuka driving prototype** with no opponents. A closed 5.807 km circuit follows an illustrated Suzuka GP map, including the S Curves, Degner, Hairpin, Spoon, 130R, final chicane and figure-eight overpass. A software 3D road renderer projects the curves and hills at 384x216 with depth testing, then scales the result with nearest-neighbour filtering. The pixel-art cockpit, moving front tyres and steering wheel remain separate layers. The HUD shows lap, position, speed, the current section, gradient and a circuit minimap. The original straight-track renderer is still available in the configuration.
 
 ## 🛠️ Technologies used
 
@@ -34,17 +34,18 @@ The current version is a **cockpit prototype**: a straight, infinite, looping tr
 
 | Feature | What it does | Status |
 | --- | --- | --- |
-| Pseudo-3D track | Renders a straight, infinite, looping track with grandstands, fences and kerbs at 384×216, scaled up to full screen | PARTIAL |
+| Suzuka circuit | Closed 5.807 km approximation with 18 named turns, a 52 m elevation range, a bridge/underpass, kerbs, runoff, grandstands and braking markers, rendered at 384×216 | PARTIAL |
 | Cockpit overlay | Draws the static pixel-art cockpit (halo, bodywork, front tyres, red inner walls) over the track | PARTIAL |
-| Rotating wheel and hands | Rotates the steering wheel and gloved hands up to 7° around the steering column as the car steers | PARTIAL |
+| Rotating wheel and hands | Rotates the steering wheel and gloved hands up to 7° around the steering column as the car steers, while the driver's legs stay fixed in the cockpit | PARTIAL |
 | Live wheel display | Shows the current gear and a power bar on the steering wheel screen | PARTIAL |
-| Car physics | Accelerates, brakes, coasts, shifts gears, computes RPM and moves the car sideways within the track limits, on a fixed 120 Hz update loop | PARTIAL |
+| Front tyre animation | Distance-driven rubber and sidewall motion, with progressive smoothing at high speed and a complete stop when the car stops | PARTIAL |
+| Car physics | Automatic corner following with manual lateral movement at 120 Hz, hill resistance, cockpit shake and progressive speed loss against either edge on straights and bends | PARTIAL |
 | Keyboard controls | Left Shift accelerates, Left Ctrl brakes and the left/right arrows steer | PARTIAL |
 | Accelerometer steering (experimental) | Steers by tilting an Android phone held in landscape, enabled with `?tilt=1` in the URL; on-screen throttle and brake buttons are not implemented yet | PARTIAL |
-| HUD | Shows lap, distance in km, position, speed in km/h and a minimap of the straight track | PARTIAL |
+| HUD | Lap, position, speed, current section, gradient and a Suzuka minimap with live position and the upper crossing highlighted | PARTIAL |
 | Cockpit layer builder | Generates `assets/cockpit.png` and `assets/wheel_hands.png` from `assets/cockpit_source.jpg`, with an identity check at 0° | PARTIAL |
 
-> No automated tests exist yet, so every feature is marked `PARTIAL`.
+> Features remain marked `PARTIAL` while this is a prototype. Track continuity, turn directions, elevation, bridge clearance, road visibility, basic physics and tyre animation have automated regression tests. This is an arcade approximation, not a surveyed simulator circuit.
 
 ## 🚀 How to run the project
 
@@ -70,6 +71,8 @@ Then open [http://localhost:8080](http://localhost:8080) in your browser and cli
 | `Left Ctrl` | Brake |
 | `←` / `→` | Steer |
 
+The car follows bends automatically, keeping its lateral position when there is no steering input. The arrows move it left or right across the road. On both straights and bends, pushing against either side shakes the cockpit and progressively reduces speed to zero, even at full throttle. Contact never triggers an instant stop or a forced pause. Release the outward steering or steer back towards the road and accelerate to resume.
+
 To try the experimental accelerometer steering on an Android phone, open the game with `?tilt=1` at the end of the URL (for example `http://<your-computer-ip>:8080/?tilt=1`) and hold the phone in landscape.
 
 ### Configuration
@@ -78,7 +81,24 @@ Game tuning lives in `js/config.js`; no file needs to be edited before running. 
 
 - `CAR` sets acceleration, braking, top speed, steering response (`steerRate`) and gear changes.
 - `WHEEL.maxDeg` sets the maximum steering wheel rotation (currently `7.0` degrees), and `WHEEL.visible` hides or shows the wheel and hands layer.
-- `TRACK` and `VIEW` set the track geometry and the camera.
+- `TIRES.animated` enables the front tyre rolling texture. Set it to `false` to stop the texture animation. Rotation follows distance travelled, including coasting and braking; `radius`, `blurStart` and `blurFull` tune the rolling speed and high-speed smoothing (metres and metres/second).
+- `TIRES.steering` enables experimental front tyre steering, following the car's smoothed direction. The tyre on the side of the turn opens outward (up to `steerMaxDeg`, currently 7 degrees); the opposite tyre turns inward with a smaller angle (`steerInwardRatio`, currently 0.75). The tread widens slightly outward and narrows inward to emphasize perspective. Set only `steering` to `false` to restore the previous fixed silhouettes while keeping the rolling animation. The tyres are separated at load time using the current artwork's bodywork edge; the chassis stays in front of them.
+- `TRACK.layout` selects `'suzuka'` (default) or `'straight'` (the previous renderer). `TRACK` and `VIEW` tune road width and camera projection. Suzuka's authored centreline and approximate height profile are in `js/game/track.js`.
+
+### Suzuka reference and fidelity
+
+The centreline is hand-traced from the supplied GP diagram and interpolated with a closed centripetal spline, resampled by distance to 5,807 metres. The same centreline drives the road, camera, corner names, minimap and lap wrap. The 18 turn directions follow the reference; the upper west-straight crossing and the lower road after Degner are separate surfaces, with approximately 10 m between road levels in this implementation.
+
+The hills follow the broad shape of the official elevation profile: downhill start/finish, a climb through the S Curves, a drop through Degner, a climb towards the hairpin, the Spoon descent, and the final descent back onto the main straight. Heights are **relative to the lowest point**, with a 52 m total range. The per-metre slopes, corner radii, banking, track width, bridge dimensions, terrain and scenery are approximations. The source diagrams are not a topographic survey. The 2026 overtaking/straight-mode zones in the supplied images are not implemented as gameplay systems.
+
+References consulted:
+
+- [Suzuka Circuit course guide](https://www.suzukacircuit.jp/eng/course_s/): GP length, 18 turns and 10-16 m width.
+- [Official course map and elevation profile, July 2026](https://www.suzukacircuit.jp/course_s/pdf/suzuka_courseguide.pdf): layout, corner geometry, height profile and underpass.
+- [Super Formula circuit information](https://superformula.net/sf2/circuit/suzuka): 52 m elevation difference.
+- [Honda's Suzuka circuit guide](https://global.honda/en/F1/circuit/suzuka/introduction/): figure-eight layout, named corner sequence and downhill main straight.
+
+For inspection in the browser console, `window.__rkd.car.z` is distance along the lap in metres. Setting it moves the car to another part of the course; the next frame updates the road and minimap. The existing keyboard controls are unchanged.
 
 ### Rebuilding the cockpit layers (optional)
 
@@ -90,3 +110,13 @@ python3 tools/build_cockpit.py
 ```
 
 This regenerates `assets/cockpit.png` and `assets/wheel_hands.png`. Add `--preview DIR` to also save preview images to a folder.
+
+The game currently uses `assets/cockpit-ferrari.png`, with rounded hand-clearance recesses and a reference-based Ferrari palette: white cockpit shoulders, red outer bodywork and dark carbon inner walls. Its dimensions and transparency match the original cockpit. This curated asset is not regenerated by the Python script. Set `COCKPIT.src` in `js/config.js` to `assets/cockpit-rounded.png` for the previous red recesses, or `assets/cockpit.png` for the original. The wheel and hands remain controlled separately by `WHEEL.visible` (currently `true`).
+
+The active wheel layer is `assets/wheel_hands-hp-clean.png`, with HP emblems near the index-finger bases and plain red fabric replacing the outer glove and forearm markings. The forearms have subtle red shading; the wheel, display region, seams and transparency are preserved. This edited asset is not regenerated by the Python builder; use `WHEEL.src = 'assets/wheel_hands.png'` to restore the original gloves.
+
+At load time, `js/render/pilot-layers.js` separates the legs from this artwork. The renderer draws them with the cockpit before rotating the wheel and hands. The separation outline uses the current 1280×800 artwork coordinates; a replacement with a different pilot pose will need an updated outline.
+
+### Running regression tests (optional)
+
+With Node.js 24 installed, run `node --test tests/*.test.mjs`. The tests cover the tyre animation plus the closed track, the 18 turn directions, elevation range, crossover clearance, hill resistance, automatic corner following, progressive edge slowing, depth occlusion and road visibility around the lap. No packages are required; Node.js is not needed to play the game.
