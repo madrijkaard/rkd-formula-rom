@@ -40,16 +40,29 @@ export const CAR = {
 
 export const FIXED_DT = 1 / 120;
 
-// Cockpit overlay image (assets/cockpit.png) native size; HUD and dash coordinates
+// Cockpit overlay image native size; HUD and dash coordinates
 // are expressed in these pixels.
-export const COCKPIT = { src: 'assets/cockpit.png', w: 1280, h: 720 };
+// Rounded recesses with the reference Ferrari white/red/carbon palette.
+// Previous cockpit.png and cockpit-rounded.png variants remain available.
+export const COCKPIT = { src: 'assets/cockpit-ferrari.png', w: 1280, h: 720 };
 
-// Steering wheel + hands layer (assets/wheel_hands.png, same width, extends below the
-// screen). It rotates around the wheel display centre / steering column axis.
+// Front tyre surface animation; disable to restore the static cockpit artwork.
+export const TIRES = {
+  animated: true,
+  steering: true,    // set false to restore the previous fixed tyre silhouettes
+  steerMaxDeg: 7,    // outward yaw of the tyre on the side of the turn
+  steerInwardRatio: 0.75, // opposite tyre turns inward with a slightly smaller angle
+  radius: 0.36,       // rolling radius in metres
+  blurStart: 35 / 3.6,
+  blurFull: 210 / 3.6,
+};
+
+// Pilot artwork (same width, extends below the screen). At load time the legs
+// become a fixed layer; only the wheel and hands rotate around the column axis.
 // screen: the wheel display region repainted every frame before the live dash is drawn.
 export const WHEEL = {
-  src: 'assets/wheel_hands.png', w: 1280, h: 800,
-  visible: true,      // set false to hide wheel + hands
+  src: 'assets/wheel_hands-hp-clean.png', w: 1280, h: 800,
+  visible: true,      // set false to hide wheel + hands; legs stay visible
   pivotX: 640, pivotY: 503,
   maxDeg: 7.0,        // full lock = 7.0 degrees, a light turn
   follow: 14,         // 1/s, extra smoothing of the displayed angle

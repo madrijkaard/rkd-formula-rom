@@ -9,6 +9,8 @@ import { PixelPen } from './pixelpen.js';
 import { drawDash } from './dash.js';
 import { drawHud } from './hud.js';
 import { hash } from '../util.js';
+import { TireAnimator } from './tires.js';
+import { splitPilotLayers } from './pilot-layers.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -23,7 +25,9 @@ export class Renderer {
     this.world = new WorldRenderer();
     this.pen = new PixelPen(this.ctx);
     this.cockpit = null;
+    this.tires = null;
     this.wheel = null;          // offscreen canvas: wheel layer + live dash, native pixels
+    this.legs = null;           // stationary pilot layer, never steering-rotated
     this.wheelAngle = 0;        // displayed angle (rad), clockwise positive
     this.lastT = null;
     this.resize();
@@ -39,13 +43,16 @@ export class Renderer {
     };
     const [cockpit, wheelImg] = await Promise.all([loadImg(COCKPIT.src), loadImg(WHEEL.src)]);
     this.cockpit = cockpit;
-    this.wheelImg = wheelImg;
+    this.tires = new TireAnimator(cockpit);
+    const pilot = splitPilotLayers(wheelImg, WHEEL.w, WHEEL.h);
+    this.wheelImg = pilot.wheel;
+    this.legs = pilot.legs;
     const c = document.createElement('canvas');
     c.width = WHEEL.w;
     c.height = WHEEL.h;
     this.wheelCtx = c.getContext('2d');
     this.wheelCtx.imageSmoothingEnabled = false;
-    this.wheelCtx.drawImage(wheelImg, 0, 0);
+    this.wheelCtx.drawImage(this.wheelImg, 0, 0);
     this.wheelPen = new PixelPen(this.wheelCtx);
     this.wheel = c;
   }
@@ -95,7 +102,6 @@ export class Renderer {
       if (hash(f, 1) < amp) sy = hash(f, 2) < 0.5 ? -k : k;
       if (hash(f, 3) < amp * 0.3) sx = hash(f, 4) < 0.5 ? -k : k;
     }
-
     this.world.render(this.fb, car, t, 0);
     this.lowCtx.putImageData(this.image, 0, 0);
     ctx.imageSmoothingEnabled = false;
@@ -104,20 +110,24 @@ export class Renderer {
     if (this.cockpit) {
       // overscan by k pixels on each side so the shake never reveals the edges
       const ox = -k + sx, oy = -k + sy, ow = cw + 2 * k, oh = ch + 2 * k;
-      ctx.drawImage(this.cockpit, ox, oy, ow, oh);
+      if (this.tires) this.tires.drawCockpit(ctx, this.cockpit, car, ox, oy, ow, oh);
+      else ctx.drawImage(this.cockpit, ox, oy, ow, oh);
+
+      // Legs follow the chassis placement/shake, but never the steering rotation.
+      const s = ow / COCKPIT.w;
+      if (this.legs) ctx.drawImage(this.legs, ox, oy, WHEEL.w * s, WHEEL.h * s);
 
       // wheel + hands, rotated around the steering column axis (nearest-neighbour)
       this.updateWheelAngle(car, t);
       if (WHEEL.visible !== false) {
-      this.bakeDash(car);
-      const s = ow / COCKPIT.w;
-      const px = ox + WHEEL.pivotX * s, py = oy + WHEEL.pivotY * s;
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(this.wheelAngle);
-      ctx.translate(-px, -py);
-      ctx.drawImage(this.wheel, ox, oy, WHEEL.w * s, WHEEL.h * s);
-      ctx.restore();
+        this.bakeDash(car);
+        const px = ox + WHEEL.pivotX * s, py = oy + WHEEL.pivotY * s;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(this.wheelAngle);
+        ctx.translate(-px, -py);
+        ctx.drawImage(this.wheel, ox, oy, WHEEL.w * s, WHEEL.h * s);
+        ctx.restore();
       }
     }
     this.pen.set(cw / COCKPIT.w, 0, 0);

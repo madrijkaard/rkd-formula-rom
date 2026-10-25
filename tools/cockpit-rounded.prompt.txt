@@ -1,0 +1,7 @@
+Asset: assets/cockpit-rounded.png
+Method: built-in image_gen, followed by local composition of the edited sidewall regions onto assets/cockpit.png.
+The original 1280x720 dimensions, alpha channel, halo, tyres, lettering and central interior are preserved. The original asset and Python builder are unchanged.
+
+Final refinement prompt (applied to the first generated cockpit variant):
+
+Edit this transparent pixel art cockpit game overlay, one targeted correction: the two RED INNER COCKPIT SIDE WALLS enclosing the hands area are still mostly straight diagonal rectangular strips. Make each of those long inner edges a noticeably CURVED CONCAVE ARC along its ENTIRE LENGTH, bowing outward into the red/white side bodywork to form spacious rounded hand pockets. Think a smoothly scalloped oval cockpit aperture seen in perspective. Each pocket must have a rounded far transition and rounded near transition joining the rest of the rim, with no straight rectangular central wall, no vertical squared endcaps. Show three-dimensional depth with curved top surface, thin bright red lip highlight and dark burgundy concave inner wall fading into black below. Preserve crisp stepped 16-bit pixel art, no soft airbrush. Keep exact composition, original canvas aspect, halo, tyres, black interior and central steering-column hub. Wheel and hands remain absent. Preserve transparent sky/track cutouts. Do not add anything. Output full transparent asset at 1280x720 pixels.
