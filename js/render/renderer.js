@@ -2,9 +2,10 @@
 // scaled up; the cockpit image (with a transparent windscreen) is drawn on top at full
 // output size, then the steering wheel + hands layer (rotated by a few degrees with the
 // steering, with the live wheel display baked into it) and finally the HUD.
-import { SCREEN_W as W, SCREEN_H as H, COCKPIT, WHEEL } from '../config.js';
+import { SCREEN_W as W, SCREEN_H as H, COCKPIT, WHEEL, TRACK } from '../config.js';
 import { Framebuffer } from './framebuffer.js';
 import { WorldRenderer } from './world.js';
+import { SuzukaRenderer } from './suzuka.js';
 import { PixelPen } from './pixelpen.js';
 import { drawDash } from './dash.js';
 import { drawHud } from './hud.js';
@@ -22,7 +23,7 @@ export class Renderer {
     this.low.height = H;
     this.lowCtx = this.low.getContext('2d');
     this.image = new ImageData(this.fb.bytes, W, H);
-    this.world = new WorldRenderer();
+    this.world = TRACK.layout === 'suzuka' ? new SuzukaRenderer() : new WorldRenderer();
     this.pen = new PixelPen(this.ctx);
     this.cockpit = null;
     this.tires = null;

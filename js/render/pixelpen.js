@@ -25,6 +25,14 @@ export class PixelPen {
     this.ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
 
+  line(x0, y0, x1, y1, color, width = 2) {
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(x1-x0), Math.abs(y1-y0))));
+    for (let i=0;i<=steps;i++) {
+      const t=i/steps;
+      this.rect(x0+(x1-x0)*t-width/2,y0+(y1-y0)*t-width/2,width,width,color);
+    }
+  }
+
   // Text in the 5x7 bitmap font. px/py = size of one font pixel in art pixels.
   textWidth(str, px, spacing = 1) {
     return str.length ? (str.length * (FONT_BIG.w + spacing) - spacing) * px : 0;

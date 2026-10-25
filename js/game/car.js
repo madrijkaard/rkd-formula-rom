@@ -1,6 +1,7 @@
 // Very simple arcade car model: longitudinal speed, lateral position, gears, rpm.
 import { CAR, TRACK } from '../config.js';
 import { clamp } from '../util.js';
+import { sampleTrack } from './track.js';
 
 export class Car {
   constructor() {
@@ -29,6 +30,7 @@ export class Car {
 
     // Longitudinal dynamics.
     const v = this.v;
+    const road = TRACK.layout === 'suzuka' ? sampleTrack(this.z) : null;
     let a;
     if (input.throttle > 0) {
       a = input.throttle * CAR.accel * Math.max(0, 1 - (v / CAR.vmax) ** 2);
@@ -36,6 +38,8 @@ export class Car {
       a = -(CAR.coastBase + CAR.coastDrag * v * v); // gentle coast-down
     }
     a -= input.brake * CAR.brake;
+    // Arcade hill resistance; keep the parked car still until the driver moves.
+    if (road && (v > 0 || input.throttle > 0)) a -= 9.81 * road.grade;
     this.v = clamp(v + a * dt, 0, CAR.vmax);
     this.z += this.v * dt;
 

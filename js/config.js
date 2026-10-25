@@ -10,6 +10,7 @@ export const VIEW = {
 };
 
 export const TRACK = {
+  layout: 'suzuka',  // 'straight' restores the original scenery renderer
   roadHalf: 6.0,     // half width of the asphalt
   lineW: 0.25,       // white edge line width
   kerbW: 1.2,        // kerb width
@@ -19,7 +20,7 @@ export const TRACK = {
   fenceH: 4.2,
   segLen: 4,         // length of one scenery segment
   drawSegs: 60,      // number of segments drawn (draw distance = segLen * drawSegs)
-  lapLength: 5000,   // virtual lap length used by the HUD
+  lapLength: 5807,   // Suzuka GP lap length in metres
   bannerEvery: 400,  // overhead banner gantry spacing
 };
 
