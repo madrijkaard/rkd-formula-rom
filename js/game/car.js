@@ -1,7 +1,7 @@
 // Very simple arcade car model: longitudinal speed, lateral position, gears, rpm.
 import { CAR, TRACK } from '../config.js';
 import { clamp } from '../util.js';
-import { sampleTrack } from './track.js';
+import { sampleTrack, corners, LAP_LENGTH } from './track.js';
 
 export class Car {
   constructor() {
@@ -10,6 +10,7 @@ export class Car {
     this.v = 0;          // speed (m/s)
     this.steer = 0;      // smoothed steering (-1..1), drives the lateral movement
     this.headingError = 0; // camera follows the road tangent automatically
+    this.assistedCorner = null; // a correct arrow tap enables this corner's assist
     this.contactSide = 0;  // -1 left, +1 right, 0 clear
     this.shake = 0;
     this.throttle = 0;   // smoothed pedal values for the dash display
@@ -45,10 +46,26 @@ export class Car {
     if (road && (v > 0 || input.throttle > 0)) a -= 9.81 * road.grade;
     this.v = clamp(v + a * dt, 0, CAR.vmax);
 
-    // Follow bends automatically; steering only chooses the lateral position.
-    // No outward curve force: without input the car stays in its chosen lane.
+    // A correct arrow tap enables automatic following for this named corner.
+    // Each new corner needs its own input, including consecutive same-side turns.
+    let corner = null;
+    if (road && Math.abs(road.curve) > CAR.cornerCurveThreshold) {
+      const distance = c => {
+        const d = Math.abs(c.d - road.d);
+        return Math.min(d, LAP_LENGTH - d);
+      };
+      corner = corners.reduce((a,b) => distance(a) < distance(b) ? a : b).number;
+    }
+    if (this.assistedCorner !== corner) this.assistedCorner = null;
+    if (corner !== null && input.steer * Math.sign(road.curve) > 0.05) {
+      this.assistedCorner = corner;
+    }
+    // Keep the forward-facing camera, but physically drift toward the outside
+    // until assistance is engaged. The penalty starts only at the road edge.
     this.headingError = 0;
-    const across = this.steer * CAR.lateral * clamp(this.v / 25, 0, 1) * dt;
+    const drift = corner !== null && this.assistedCorner !== corner && input.throttle > 0
+      ? clamp(-road.curve * this.v * this.v * CAR.curveDrift, -18, 18) : 0;
+    const across = (this.steer * CAR.lateral * clamp(this.v / 25, 0, 1) + drift) * dt;
     const nextX = this.x + across;
     const lim = TRACK.roadHalf - CAR.halfWidth;
     const side = nextX >= lim ? 1 : nextX <= -lim ? -1 : 0;

@@ -32,6 +32,8 @@ export const CAR = {
   coastDrag: 0.00022, // aero drag coefficient (a = k * v^2)
   lateral: 9,        // m/s lateral movement at full steering input
   wallDrag: 20,      // m/s² in addition to cancelling positive acceleration
+  curveDrift: 0.16,  // outward speed = curvature * speed² * this arcade factor
+  cornerCurveThreshold: 0.0015, // rad/m: ignore tiny bends in nominal straights
   halfWidth: 1.0,    // car half width, used for track limits
   steerRate: 3.5,    // how fast the steering follows the (digital) input (1/s)
   // upper speed (km/h) of each gear 1..8
