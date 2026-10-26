@@ -71,7 +71,7 @@ Then open [http://localhost:8080](http://localhost:8080) in your browser and cli
 | `Left Ctrl` | Brake |
 | `←` / `→` | Steer |
 
-The car follows bends automatically, keeping its lateral position when there is no steering input. The arrows move it left or right across the road. On both straights and bends, pushing against either side shakes the cockpit and progressively reduces speed to zero, even at full throttle. Contact never triggers an instant stop or a forced pause. Release the outward steering or steer back towards the road and accelerate to resume.
+When accelerating into a bend, tap the arrow in the direction of that bend to enable automatic following for that corner. You can then release it; each new corner requires another input. Holding only the accelerator pulls the car towards the outside of the curve until you activate assistance. Reaching the road edge triggers cockpit shake and progressive speed loss, with no instant stop or forced pause. The arrows also move the car laterally, and insisting against either edge can gradually stop it even at full throttle. Steer back towards the road to recover.
 
 To try the experimental accelerometer steering on an Android phone, open the game with `?tilt=1` at the end of the URL (for example `http://<your-computer-ip>:8080/?tilt=1`) and hold the phone in landscape.
 
